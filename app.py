@@ -28,11 +28,14 @@ if selected_folder:
         st.subheader(f"?? Ejercicio: {selected_file}")
         
         try:
-            # Lectura en binario puro y decodificación con latin-1 (imposible que falle)
-            with open(file_path, "rb") as f:
-                raw_data = f.read()
-            
-            text_data = raw_data.decode("latin-1")
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                    text_data = f.read()
+            except Exception:
+                with open(file_path, "rb") as f:
+                    raw_data = f.read()
+                text_data = raw_data.decode("latin-1", errors="replace")
+                
             nb = json.loads(text_data)
                 
             for i, cell in enumerate(nb.get("cells", [])):
