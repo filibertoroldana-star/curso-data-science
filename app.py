@@ -27,13 +27,24 @@ if selected_folder:
         file_path = os.path.join(folder_path, selected_file)
         st.subheader(f"?? Ejercicio: {selected_file}")
         
+        nb = None
         try:
-            # Leer como bytes y decodificar reemplazando caracteres inválidos
             with open(file_path, "rb") as f:
                 raw_data = f.read()
             
-            text_data = raw_data.decode("utf-8", errors="replace")
-            nb = json.loads(text_data)
+            # Intentar decodificar probando las codificaciones más comunes
+            for enc in ["utf-8", "latin-1", "cp1252"]:
+                try:
+                    text_data = raw_data.decode(enc)
+                    nb = json.loads(text_data)
+                    break
+                except Exception:
+                    continue
+            
+            # Si ninguna funcionó, forzar reemplazo de bytes malos
+            if nb is None:
+                text_data = raw_data.decode("utf-8", errors="replace")
+                nb = json.loads(text_data)
                 
             for i, cell in enumerate(nb.get("cells", [])):
                 if cell["cell_type"] == "code":
@@ -53,5 +64,5 @@ if selected_folder:
                                 st.markdown("".join(output["data"]["text/html"]), unsafe_allow_html=True)
                     st.divider()
         except Exception as e:
-            st.error(f"Error al leer el archivo: {e}")
+            st.error(f"No se pudo cargar este cuaderno debido a un conflicto de formato o codificación. Detalle: {e}")
 
