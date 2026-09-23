@@ -1,53 +1,53 @@
-﻿import streamlit as st
-import pandas as pd
+import os
+import json
+import streamlit as st
 
-# Configuración de la página
-st.set_page_config(page_title='Curso de Data Science', page_icon='📊', layout='wide')
+st.set_page_config(page_title="Resultados del Curso de Data Science", layout="wide")
 
-# Diseño personalizado con CSS para ocultar el menú de Streamlit y estilizar la interfaz
-st.markdown('''
-    <style>
-    #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    .main { background-color: #f8f9fa; }
-    h1 { color: #1f77b4; font-family: 'Helvetica', sans-serif; }
-    h2, h3 { color: #2c3e50; }
-    .stDataFrame { border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-    </style>
-''', unsafe_allow_html=True)
+st.title("?? Visor de Resultados por Carpeta y Ejercicio")
+st.markdown("Esta aplicaci�n lee tus notebooks de Jupyter y muestra los ejercicios y resultados organizados.")
 
-# Título principal en español
-st.title('📊 Panel Interactivo de Ciencia de Datos')
-st.markdown('Bienvenido al explorador visual de tus prácticas, notebooks y datasets del curso.')
+root_dir = "."
 
-# Menú lateral en español
-st.sidebar.header('⚙️ Panel de Navegación')
-opcion = st.sidebar.selectbox('Selecciona una sección:', ['🏠 Resumen General', '📁 Explorador de Datasets', '📈 Estadísticas y Prácticas'])
+folders = [f for f in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, f)) and not f.startswith((".", "_"))]
+folders.sort()
 
-if opcion == '🏠 Resumen General':
-    st.subheader('Estado Actual del Proyecto')
-    st.info('La aplicación se encuentra conectada correctamente a tu repositorio y desplegada en la nube.')
+selected_folder = st.sidebar.selectbox("Selecciona una Carpeta", folders)
+
+if selected_folder:
+    folder_path = os.path.join(root_dir, selected_folder)
+    files = [f for f in os.listdir(folder_path) if f.endswith(".ipynb")]
+    files.sort()
     
-    col1, col2, col3 = st.columns(3)
-    col1.metric('Módulos del Curso', '12', 'Activos')
-    col2.metric('Entorno', 'Streamlit & Python', 'Optimizado')
-    col3.metric('Estado del Servidor', 'En Línea 🟢', 'Render')
-
-elif opcion == '📁 Explorador de Datasets':
-    st.subheader('Visualización del Dataset: StudentsPerformance')
-    try:
-        df = pd.read_csv('02.Intro a Pandas/StudentsPerformance.css')
-        st.success('¡Archivo cargado con éxito desde el repositorio!')
-        st.dataframe(df, use_container_width=True)
-    except Exception as e:
+    st.header(f"?? Carpeta: {selected_folder}")
+    
+    selected_file = st.selectbox("Selecciona un Ejercicio (Notebook)", files)
+    
+    if selected_file:
+        file_path = os.path.join(folder_path, selected_file)
+        st.subheader(f"?? Ejercicio: {selected_file}")
+        
         try:
-            df = pd.read_csv('02.Intro a Pandas/StudentsPerformance.csv')
-            st.success('¡Archivo cargado con éxito desde el repositorio!')
-            st.dataframe(df, use_container_width=True)
-        except:
-            st.warning('No se pudo localizar el archivo CSV de ejemplo.')
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                nb = json.load(f)
+                
+            for i, cell in enumerate(nb.get("cells", [])):
+                if cell["cell_type"] == "code":
+                    st.markdown(f"**C�digo (Celda {i+1}):**")
+                    code_text = "".join(cell.get("source", []))
+                    st.code(code_text, language="python")
+                    
+                    outputs = cell.get("outputs", [])
+                    if outputs:
+                        st.markdown("**Resultado:**")
+                        for output in outputs:
+                            if "text" in output:
+                                st.text("".join(output["text"]))
+                            elif "data" in output and "text/plain" in output["data"]:
+                                st.text("".join(output["data"]["text/plain"]))
+                            elif "data" in output and "text/html" in output["data"]:
+                                st.markdown("".join(output["data"]["text/html"]), unsafe_allow_html=True)
+                    st.divider()
+        except Exception as e:
+            st.error(f"Error al leer el archivo: {e}")
 
-else:
-    st.subheader('📈 Sección de Prácticas y Modelos')
-    st.write('Aquí puedes integrar los resultados de tus notebooks de Machine Learning, regresiones y gráficas interactivas.')
