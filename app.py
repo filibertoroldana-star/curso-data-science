@@ -28,9 +28,12 @@ if selected_folder:
         st.subheader(f"?? Ejercicio: {selected_file}")
         
         try:
-            # Leer el archivo reemplazando cualquier byte inválido para que nunca falle
-            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
-                nb = json.load(f)
+            # Leer como bytes y decodificar reemplazando caracteres inválidos
+            with open(file_path, "rb") as f:
+                raw_data = f.read()
+            
+            text_data = raw_data.decode("utf-8", errors="replace")
+            nb = json.loads(text_data)
                 
             for i, cell in enumerate(nb.get("cells", [])):
                 if cell["cell_type"] == "code":
