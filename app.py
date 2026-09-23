@@ -27,37 +27,28 @@ if selected_folder:
         file_path = os.path.join(folder_path, selected_file)
         st.subheader(f"?? Ejercicio: {selected_file}")
         
-        nb = None
-        # Intentar leer con diferentes codificaciones si una falla
-        for enc in ["utf-8", "latin-1", "cp1252"]:
-            try:
-                with open(file_path, "r", encoding=enc) as f:
-                    nb = json.load(f)
-                break
-            except Exception:
-                continue
+        try:
+            # Leer el archivo reemplazando cualquier byte inválido para que nunca falle
+            with open(file_path, "r", encoding="utf-8", errors="replace") as f:
+                nb = json.load(f)
                 
-        if nb:
-            try:
-                for i, cell in enumerate(nb.get("cells", [])):
-                    if cell["cell_type"] == "code":
-                        st.markdown(f"**Código (Celda {i+1}):**")
-                        code_text = "".join(cell.get("source", []))
-                        st.code(code_text, language="python")
-                        
-                        outputs = cell.get("outputs", [])
-                        if outputs:
-                            st.markdown("**Resultado:**")
-                            for output in outputs:
-                                if "text" in output:
-                                    st.text("".join(output["text"]))
-                                elif "data" in output and "text/plain" in output["data"]:
-                                    st.text("".join(output["data"]["text/plain"]))
-                                elif "data" in output and "text/html" in output["data"]:
-                                    st.markdown("".join(output["data"]["text/html"]), unsafe_allow_html=True)
-                        st.divider()
-            except Exception as e:
-                st.error(f"Error al procesar las celdas: {e}")
-        else:
-            st.error("No se pudo leer el archivo debido a un conflicto de codificación.")
+            for i, cell in enumerate(nb.get("cells", [])):
+                if cell["cell_type"] == "code":
+                    st.markdown(f"**Código (Celda {i+1}):**")
+                    code_text = "".join(cell.get("source", []))
+                    st.code(code_text, language="python")
+                    
+                    outputs = cell.get("outputs", [])
+                    if outputs:
+                        st.markdown("**Resultado:**")
+                        for output in outputs:
+                            if "text" in output:
+                                st.text("".join(output["text"]))
+                            elif "data" in output and "text/plain" in output["data"]:
+                                st.text("".join(output["data"]["text/plain"]))
+                            elif "data" in output and "text/html" in output["data"]:
+                                st.markdown("".join(output["data"]["text/html"]), unsafe_allow_html=True)
+                    st.divider()
+        except Exception as e:
+            st.error(f"Error al leer el archivo: {e}")
 
